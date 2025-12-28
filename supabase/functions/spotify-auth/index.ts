@@ -76,7 +76,6 @@ serve(async (req) => {
             error: `Spotify token endpoint returned non-JSON (status ${tokenResponse.status}). Please verify Redirect URI + Client Secret in Spotify app settings.`,
           }),
           {
-            status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
@@ -89,7 +88,6 @@ serve(async (req) => {
             error: tokenData?.error_description || tokenData?.error || `Token exchange failed (status ${tokenResponse.status})`,
           }),
           {
-            status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
@@ -111,7 +109,6 @@ serve(async (req) => {
             error: `Spotify profile endpoint returned non-JSON (status ${profileResponse.status}). Try again.`,
           }),
           {
-            status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
@@ -128,7 +125,6 @@ serve(async (req) => {
               `Failed to fetch profile (status ${profileResponse.status})`,
           }),
           {
-            status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
