@@ -82,33 +82,67 @@ export interface TransferResult {
   failed: { type: string; error: string; id?: string }[];
 }
 
+// Check if using self-hosted backend (Node.js/Express)
+// Set VITE_BACKEND_URL in .env to use self-hosted backend
+// Example: VITE_BACKEND_URL=https://api.yourdomain.com
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const useSelfHosted = !!BACKEND_URL;
+
 const getRedirectUri = () => {
   return `${window.location.origin}/callback`;
 };
 
-export async function getSpotifyAuthUrl(accountType: 'source' | 'target'): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('spotify-auth', {
-    body: {
-      action: 'get_auth_url',
-      redirect_uri: getRedirectUri(),
-      account_type: accountType,
+// Helper for self-hosted API calls
+async function callSelfHostedApi(endpoint: string, body: any) {
+  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
+    body: JSON.stringify(body),
   });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(errorData.error || 'Request failed');
+  }
+  
+  return response.json();
+}
 
+export async function getSpotifyAuthUrl(accountType: 'source' | 'target'): Promise<string> {
+  const body = {
+    action: 'get_auth_url',
+    redirect_uri: getRedirectUri(),
+    account_type: accountType,
+  };
+
+  if (useSelfHosted) {
+    const data = await callSelfHostedApi('/api/spotify-auth', body);
+    return data.auth_url;
+  }
+
+  const { data, error } = await supabase.functions.invoke('spotify-auth', { body });
   if (error) throw new Error(error.message);
   return data.auth_url;
 }
 
 export async function exchangeSpotifyToken(code: string): Promise<{ tokens: SpotifyTokens; user: SpotifyUser }> {
-  const { data, error } = await supabase.functions.invoke('spotify-auth', {
-    body: {
-      action: 'exchange_token',
-      code,
-      redirect_uri: getRedirectUri(),
-    },
-  });
+  const body = {
+    action: 'exchange_token',
+    code,
+    redirect_uri: getRedirectUri(),
+  };
 
-  if (error) throw new Error(error.message);
+  let data;
+  if (useSelfHosted) {
+    data = await callSelfHostedApi('/api/spotify-auth', body);
+  } else {
+    const result = await supabase.functions.invoke('spotify-auth', { body });
+    if (result.error) throw new Error(result.error.message);
+    data = result.data;
+  }
+
   if (data.error) throw new Error(data.error);
   
   return {
@@ -122,16 +156,21 @@ export async function exchangeSpotifyToken(code: string): Promise<{ tokens: Spot
 }
 
 export async function getSpotifyUserData(accessToken: string): Promise<SpotifyUserData> {
-  const { data, error } = await supabase.functions.invoke('spotify-data', {
-    body: {
-      action: 'get_user_data',
-      access_token: accessToken,
-    },
-  });
+  const body = {
+    action: 'get_user_data',
+    access_token: accessToken,
+  };
 
-  if (error) throw new Error(error.message);
+  let data;
+  if (useSelfHosted) {
+    data = await callSelfHostedApi('/api/spotify-data', body);
+  } else {
+    const result = await supabase.functions.invoke('spotify-data', { body });
+    if (result.error) throw new Error(result.error.message);
+    data = result.data;
+  }
+
   if (data.error) throw new Error(data.error);
-  
   return data;
 }
 
@@ -140,19 +179,24 @@ export async function transferSpotifyData(
   targetToken: string,
   options: TransferOptions
 ): Promise<TransferResult> {
-  const { data, error } = await supabase.functions.invoke('spotify-data', {
-    body: {
-      action: 'transfer_data',
-      data: {
-        source_token: sourceToken,
-        target_token: targetToken,
-        transfer_options: options,
-      },
+  const body = {
+    action: 'transfer_data',
+    data: {
+      source_token: sourceToken,
+      target_token: targetToken,
+      transfer_options: options,
     },
-  });
+  };
 
-  if (error) throw new Error(error.message);
+  let data;
+  if (useSelfHosted) {
+    data = await callSelfHostedApi('/api/spotify-data', body);
+  } else {
+    const result = await supabase.functions.invoke('spotify-data', { body });
+    if (result.error) throw new Error(result.error.message);
+    data = result.data;
+  }
+
   if (data.error) throw new Error(data.error);
-  
   return data;
 }
