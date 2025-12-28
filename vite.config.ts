@@ -5,8 +5,6 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Thay 'spotify-transfer' bằng tên repo GitHub của bạn
-  base: mode === "production" ? "/tuanhai/" : "/",
   server: {
     host: "::",
     port: 8080,
