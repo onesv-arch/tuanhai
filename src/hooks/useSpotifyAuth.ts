@@ -38,8 +38,8 @@ export function useSpotifyAuth() {
       setSourceAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('source');
 
-      // Store account type in session storage for callback
-      sessionStorage.setItem('spotify_auth_type', 'source');
+      // Store account type in localStorage for callback (shared across tabs)
+      localStorage.setItem('spotify_auth_type', 'source');
 
       // In Lovable preview (iframe), redirecting the current frame can be blocked.
       // Open OAuth in a new tab instead.
@@ -61,7 +61,7 @@ export function useSpotifyAuth() {
     try {
       setTargetAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('target');
-      sessionStorage.setItem('spotify_auth_type', 'target');
+      localStorage.setItem('spotify_auth_type', 'target');
 
       const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
       if (!opened) {
