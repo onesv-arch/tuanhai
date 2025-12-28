@@ -35,26 +35,43 @@ export function useSpotifyAuth() {
 
   const loginSource = useCallback(async () => {
     try {
-      setSourceAccount(prev => ({ ...prev, isLoading: true, error: null }));
+      setSourceAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('source');
+
       // Store account type in session storage for callback
       sessionStorage.setItem('spotify_auth_type', 'source');
-      window.location.href = authUrl;
+
+      // In Lovable preview (iframe), redirecting the current frame can be blocked.
+      // Open OAuth in a new tab instead.
+      const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        // Fallback: try same-tab navigation
+        window.location.href = authUrl;
+      }
+
+      // Don’t keep the card stuck in loading state while user signs in.
+      setSourceAccount((prev) => ({ ...prev, isLoading: false }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
-      setSourceAccount(prev => ({ ...prev, isLoading: false, error: message }));
+      setSourceAccount((prev) => ({ ...prev, isLoading: false, error: message }));
     }
   }, []);
 
   const loginTarget = useCallback(async () => {
     try {
-      setTargetAccount(prev => ({ ...prev, isLoading: true, error: null }));
+      setTargetAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('target');
       sessionStorage.setItem('spotify_auth_type', 'target');
-      window.location.href = authUrl;
+
+      const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        window.location.href = authUrl;
+      }
+
+      setTargetAccount((prev) => ({ ...prev, isLoading: false }));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
-      setTargetAccount(prev => ({ ...prev, isLoading: false, error: message }));
+      setTargetAccount((prev) => ({ ...prev, isLoading: false, error: message }));
     }
   }, []);
 
