@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { ArrowRight, ArrowLeftRight, Loader2, Music, Disc3, User, Podcast, ListMusic } from "lucide-react";
+import { ArrowRight, ArrowDown, Loader2, Music, Disc3, User, Podcast, ListMusic, CheckCircle2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SpotifyLogo } from "@/components/SpotifyLogo";
 import { AccountCard } from "@/components/AccountCard";
 import { DataSelector } from "@/components/DataSelector";
 import { TransferProgress } from "@/components/TransferProgress";
-import { useSpotifyAuth, SpotifyAccount } from "@/hooks/useSpotifyAuth";
+import { useSpotifyAuth } from "@/hooks/useSpotifyAuth";
 import { transferSpotifyData, TransferResult } from "@/lib/spotify";
 
 const Index = () => {
@@ -52,6 +53,10 @@ const Index = () => {
           error: null,
         });
         sessionStorage.removeItem('spotify_source_data');
+        toast({
+          title: "Đã kết nối!",
+          description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+        });
       } catch (e) {
         console.error('Failed to parse source data:', e);
       }
@@ -68,13 +73,18 @@ const Index = () => {
           error: null,
         });
         sessionStorage.removeItem('spotify_target_data');
+        toast({
+          title: "Đã kết nối!",
+          description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+        });
       } catch (e) {
         console.error('Failed to parse target data:', e);
       }
     }
-  }, [setSourceAccount, setTargetAccount]);
+  }, [setSourceAccount, setTargetAccount, toast]);
 
   const canTransfer = sourceAccount.user && targetAccount.user && sourceAccount.tokens && targetAccount.tokens;
+  const bothConnected = sourceAccount.user && targetAccount.user;
 
   const handleTransfer = async () => {
     if (!sourceAccount.tokens || !targetAccount.tokens || !sourceAccount.userData) {
@@ -92,7 +102,6 @@ const Index = () => {
     setTransferError(null);
 
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setTransferProgress(prev => Math.min(prev + 10, 90));
       }, 500);
@@ -140,59 +149,54 @@ const Index = () => {
     const { playlists, savedTracks, savedAlbums, followedArtists, savedShows } = sourceAccount.userData;
     
     return [
-      { icon: ListMusic, label: 'Playlists', count: playlists.length },
-      { icon: Music, label: 'Liked Songs', count: savedTracks.length },
-      { icon: Disc3, label: 'Albums', count: savedAlbums.length },
-      { icon: User, label: 'Artists', count: followedArtists.length },
-      { icon: Podcast, label: 'Podcasts', count: savedShows.length },
+      { icon: ListMusic, label: 'Playlists', count: playlists.length, color: 'text-purple-400' },
+      { icon: Music, label: 'Bài hát', count: savedTracks.length, color: 'text-pink-400' },
+      { icon: Disc3, label: 'Albums', count: savedAlbums.length, color: 'text-blue-400' },
+      { icon: User, label: 'Nghệ sĩ', count: followedArtists.length, color: 'text-orange-400' },
+      { icon: Podcast, label: 'Podcasts', count: savedShows.length, color: 'text-teal-400' },
     ];
   };
 
   return (
-    <div className="min-h-screen spotify-gradient">
+    <div className="min-h-screen bg-gradient-to-b from-[#121212] via-[#181818] to-[#121212]">
       {/* Header */}
-      <header className="border-b border-border/30 bg-background/50 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-border/20 bg-background/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <SpotifyLogo />
-          <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
+            <Sparkles className="w-3 h-3 mr-1" />
             Beta
           </Badge>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="container mx-auto px-4 py-8 space-y-8 max-w-5xl">
         {/* Hero Section */}
-        <div className="text-center space-y-4 py-8">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-fade-in">
-            Chuyển đổi tài khoản Spotify
+        <div className="text-center space-y-4 py-6">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground animate-fade-in">
+            Chuyển đổi tài khoản{" "}
+            <span className="text-primary">Spotify</span>
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            Di chuyển playlists, bài hát, album, nghệ sĩ và podcast giữa hai tài khoản Spotify một cách dễ dàng
+          <p className="text-base md:text-lg text-muted-foreground max-w-xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            Di chuyển toàn bộ dữ liệu giữa hai tài khoản một cách nhanh chóng và an toàn
           </p>
         </div>
 
-        {/* Account Cards */}
-        <div className="grid md:grid-cols-2 gap-6 relative">
+        {/* Account Cards - Side by Side */}
+        <div className="grid md:grid-cols-2 gap-6">
           <AccountCard
             title="Tài khoản nguồn"
-            subtitle="Đăng nhập tài khoản cũ của bạn"
+            subtitle="Nơi lấy dữ liệu"
             account={sourceAccount}
             onLogin={loginSource}
             onLogout={logoutSource}
             variant="source"
           />
 
-          {/* Transfer Arrow */}
-          <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="bg-background border border-border rounded-full p-3 shadow-lg">
-              <ArrowLeftRight className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-
           <AccountCard
             title="Tài khoản đích"
-            subtitle="Đăng nhập tài khoản mới của bạn"
+            subtitle="Nơi nhận dữ liệu"
             account={targetAccount}
             onLogin={loginTarget}
             onLogout={logoutTarget}
@@ -200,21 +204,42 @@ const Index = () => {
           />
         </div>
 
+        {/* Connection Status */}
+        {(sourceAccount.user || targetAccount.user) && (
+          <Card className="border-border/30 bg-card/50 backdrop-blur animate-fade-in">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-center gap-4">
+                <div className={`flex items-center gap-2 ${sourceAccount.user ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {sourceAccount.user ? <CheckCircle2 className="h-5 w-5" /> : <div className="h-5 w-5 rounded-full border-2 border-current" />}
+                  <span className="font-medium">Nguồn</span>
+                </div>
+                <ArrowRight className={`h-5 w-5 ${bothConnected ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div className={`flex items-center gap-2 ${targetAccount.user ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {targetAccount.user ? <CheckCircle2 className="h-5 w-5" /> : <div className="h-5 w-5 rounded-full border-2 border-current" />}
+                  <span className="font-medium">Đích</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Data Summary */}
         {sourceAccount.userData && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-fade-in">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 animate-fade-in">
             {getDataSummary()?.map((item, index) => {
               const Icon = item.icon;
               return (
-                <div 
+                <Card 
                   key={item.label}
-                  className="bg-card/50 border border-border/50 rounded-lg p-4 text-center backdrop-blur"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  className="border-border/30 bg-card/50 backdrop-blur hover:bg-card/70 transition-all cursor-default"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <Icon className="h-6 w-6 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold">{item.count}</p>
-                  <p className="text-sm text-muted-foreground">{item.label}</p>
-                </div>
+                  <CardContent className="p-4 text-center">
+                    <Icon className={`h-6 w-6 mx-auto mb-2 ${item.color}`} />
+                    <p className="text-2xl font-bold">{item.count.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -229,27 +254,31 @@ const Index = () => {
           />
         )}
 
-        {/* Transfer Button */}
+        {/* Transfer Button - Always visible when both connected */}
         {canTransfer && (
-          <div className="flex justify-center animate-fade-in">
+          <div className="flex flex-col items-center gap-4 animate-fade-in py-4">
+            <ArrowDown className="h-6 w-6 text-muted-foreground animate-bounce" />
             <Button
               size="lg"
               onClick={handleTransfer}
               disabled={isTransferring}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-12 py-6 rounded-full animate-pulse-glow"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-16 py-7 rounded-full shadow-2xl shadow-primary/30 hover:shadow-primary/50 hover:scale-105 transition-all duration-300"
             >
               {isTransferring ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  <Loader2 className="mr-3 h-6 w-6 animate-spin" />
                   Đang chuyển đổi...
                 </>
               ) : (
                 <>
-                  Bắt đầu chuyển đổi
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <Sparkles className="mr-3 h-6 w-6" />
+                  CHUYỂN ĐỔI
                 </>
               )}
             </Button>
+            <p className="text-sm text-muted-foreground">
+              Nhấn để bắt đầu chuyển dữ liệu
+            </p>
           </div>
         )}
 
@@ -263,10 +292,10 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/30 py-6 mt-auto">
+      <footer className="border-t border-border/20 py-6 mt-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Spotify Migration Tool • Được xây dựng với ❤️</p>
-          <p className="mt-1">Ứng dụng này không được Spotify liên kết hoặc xác nhận</p>
+          <p>Spotify Migration Tool • Trikatuka Universe</p>
+          <p className="mt-1 text-xs">Không được Spotify xác nhận hoặc liên kết</p>
         </div>
       </footer>
     </div>
