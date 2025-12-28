@@ -37,7 +37,14 @@ const Index = () => {
   const [transferResult, setTransferResult] = useState<TransferResult | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  // Load data from localStorage (persist across reloads) and sync across tabs
+  // Clear localStorage on initial page load (fresh start each session)
+  useEffect(() => {
+    // Clear old session data on page load
+    localStorage.removeItem('spotify_source_data');
+    localStorage.removeItem('spotify_target_data');
+  }, []);
+
+  // Sync data across tabs (for callback page)
   useEffect(() => {
     const lastIds = {
       source: sourceAccount.user?.id ?? null,
