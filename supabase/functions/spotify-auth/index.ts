@@ -51,7 +51,7 @@ serve(async (req) => {
     if (action === 'exchange_token') {
       // Exchange authorization code for access token
       console.log('Exchanging code for token...');
-      
+
       const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
         method: 'POST',
         headers: {
@@ -65,39 +65,95 @@ serve(async (req) => {
         }),
       });
 
-      const tokenData = await tokenResponse.json();
-      
-      if (tokenData.error) {
-        console.error('Token exchange error:', tokenData.error);
-        return new Response(JSON.stringify({ error: tokenData.error_description || tokenData.error }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const tokenText = await tokenResponse.text();
+      let tokenData: any;
+      try {
+        tokenData = JSON.parse(tokenText);
+      } catch {
+        console.error('Token endpoint returned non-JSON:', tokenText.slice(0, 200));
+        return new Response(
+          JSON.stringify({
+            error: `Spotify token endpoint returned non-JSON (status ${tokenResponse.status}). Please verify Redirect URI + Client Secret in Spotify app settings.`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      if (!tokenResponse.ok || tokenData?.error) {
+        console.error('Token exchange error:', tokenData?.error || tokenResponse.status);
+        return new Response(
+          JSON.stringify({
+            error: tokenData?.error_description || tokenData?.error || `Token exchange failed (status ${tokenResponse.status})`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
 
       // Get user profile
       const profileResponse = await fetch('https://api.spotify.com/v1/me', {
-        headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
       });
-      const profile = await profileResponse.json();
+
+      const profileText = await profileResponse.text();
+      let profile: any;
+      try {
+        profile = JSON.parse(profileText);
+      } catch {
+        console.error('Profile endpoint returned non-JSON:', profileText.slice(0, 200));
+        return new Response(
+          JSON.stringify({
+            error: `Spotify profile endpoint returned non-JSON (status ${profileResponse.status}). Try again.`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      if (!profileResponse.ok || profile?.error) {
+        console.error('Profile fetch error:', profile?.error || profileResponse.status);
+        return new Response(
+          JSON.stringify({
+            error:
+              profile?.error?.message ||
+              profile?.error_description ||
+              profile?.error ||
+              `Failed to fetch profile (status ${profileResponse.status})`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
 
       console.log(`Token exchanged successfully for user: ${profile.display_name || profile.id}`);
-      
-      return new Response(JSON.stringify({
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_in: tokenData.expires_in,
-        user: {
-          id: profile.id,
-          display_name: profile.display_name,
-          email: profile.email,
-          images: profile.images,
-          country: profile.country,
-          product: profile.product,
-        },
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+
+      return new Response(
+        JSON.stringify({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_in: tokenData.expires_in,
+          user: {
+            id: profile.id,
+            display_name: profile.display_name,
+            email: profile.email,
+            images: profile.images,
+            country: profile.country,
+            product: profile.product,
+          },
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     if (action === 'refresh_token') {
