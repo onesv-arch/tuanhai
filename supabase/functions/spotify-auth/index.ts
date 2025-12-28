@@ -104,10 +104,12 @@ serve(async (req) => {
         profile = JSON.parse(profileText);
       } catch {
         console.error('Profile endpoint returned non-JSON:', profileText.slice(0, 200));
+        // 403 with HTML usually means "user not registered in dev app"
+        const hint = profileResponse.status === 403 
+          ? 'Tài khoản này chưa được thêm vào danh sách test users. Vào Spotify Developer Dashboard → App → Settings → User Management và thêm email của tài khoản.'
+          : `Spotify profile endpoint returned non-JSON (status ${profileResponse.status}). Try again.`;
         return new Response(
-          JSON.stringify({
-            error: `Spotify profile endpoint returned non-JSON (status ${profileResponse.status}). Try again.`,
-          }),
+          JSON.stringify({ error: hint }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
