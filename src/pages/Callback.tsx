@@ -47,8 +47,8 @@ const Callback = () => {
         setMessage('Đang tải dữ liệu...');
         const userData = await getSpotifyUserData(tokens.access_token);
 
-        // Persist in localStorage so both accounts stay connected across reloads/tabs
-        localStorage.setItem(
+        // Persist in sessionStorage so data stays within browser session but clears on close
+        sessionStorage.setItem(
           `spotify_${accountType}_data`,
           JSON.stringify({ user, tokens, userData })
         );
