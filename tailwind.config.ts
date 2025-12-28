@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        spotify: {
+          green: "hsl(var(--spotify-green))",
+          "green-hover": "hsl(var(--spotify-green-hover))",
+          black: "hsl(var(--spotify-black))",
+          dark: "hsl(var(--spotify-dark))",
+          "light-gray": "hsl(var(--spotify-light-gray))",
+          text: "hsl(var(--spotify-text))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +88,28 @@ export default {
             height: "0",
           },
         },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in": {
+          "0%": { opacity: "0", transform: "translateX(-20px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px hsl(141 73% 42% / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(141 73% 42% / 0.5)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.5s ease-out forwards",
+        "slide-in": "slide-in 0.3s ease-out forwards",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+      },
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
     },
   },
