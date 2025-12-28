@@ -38,19 +38,20 @@ export function useSpotifyAuth() {
       setSourceAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('source');
 
-      // Store account type in localStorage for callback (shared across tabs)
-      localStorage.setItem('spotify_auth_type', 'source');
-
-      // In Lovable preview (iframe), redirecting the current frame can be blocked.
-      // Open OAuth in a new tab instead.
+      // Account type is encoded in the OAuth `state` already (see backend function).
+      // Open OAuth in a new tab (Lovable preview can block same-tab redirects).
       const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
-      if (!opened) {
+      if (opened) {
+        opened.focus();
+      } else {
         // Fallback: try same-tab navigation
-        window.location.href = authUrl;
+        window.location.assign(authUrl);
       }
 
-      // Don’t keep the card stuck in loading state while user signs in.
-      setSourceAccount((prev) => ({ ...prev, isLoading: false }));
+      // Prevent double-click from opening multiple tabs
+      window.setTimeout(() => {
+        setSourceAccount((prev) => ({ ...prev, isLoading: false }));
+      }, 1200);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
       setSourceAccount((prev) => ({ ...prev, isLoading: false, error: message }));
@@ -61,14 +62,17 @@ export function useSpotifyAuth() {
     try {
       setTargetAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('target');
-      localStorage.setItem('spotify_auth_type', 'target');
 
       const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
-      if (!opened) {
-        window.location.href = authUrl;
+      if (opened) {
+        opened.focus();
+      } else {
+        window.location.assign(authUrl);
       }
 
-      setTargetAccount((prev) => ({ ...prev, isLoading: false }));
+      window.setTimeout(() => {
+        setTargetAccount((prev) => ({ ...prev, isLoading: false }));
+      }, 1200);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
       setTargetAccount((prev) => ({ ...prev, isLoading: false, error: message }));

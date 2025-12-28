@@ -32,34 +32,26 @@ const Callback = () => {
       }
 
       try {
-        // Use localStorage so data persists across tabs
-        let accountType = localStorage.getItem('spotify_auth_type') as 'source' | 'target' | null;
-        
-        if (!accountType) {
-          // Try to extract from state (format: "source_timestamp" or "target_timestamp")
-          const stateType = state?.split('_')[0] as 'source' | 'target' | undefined;
-          if (stateType === 'source' || stateType === 'target') {
-            accountType = stateType;
-          }
-        }
+        // Determine account type from OAuth state (format: "source_timestamp" or "target_timestamp")
+        const stateType = state?.split('_')[0] as 'source' | 'target' | undefined;
+        const accountType: 'source' | 'target' | null =
+          stateType === 'source' || stateType === 'target' ? stateType : null;
 
         if (!accountType) {
-          throw new Error('Không xác định được loại tài khoản');
+          throw new Error('Không xác định được loại tài khoản (source/target)');
         }
 
         setMessage('Đang xác thực với Spotify...');
         const { tokens, user } = await exchangeSpotifyToken(code);
-        
+
         setMessage('Đang tải dữ liệu...');
         const userData = await getSpotifyUserData(tokens.access_token);
 
-        // Store in localStorage for the main app to pick up (shared across tabs)
-        localStorage.setItem(`spotify_${accountType}_data`, JSON.stringify({
-          user,
-          tokens,
-          userData,
-        }));
-        localStorage.removeItem('spotify_auth_type');
+        // Persist in localStorage so both accounts stay connected across reloads/tabs
+        localStorage.setItem(
+          `spotify_${accountType}_data`,
+          JSON.stringify({ user, tokens, userData })
+        );
 
         setStatus('success');
         setMessage(`Đăng nhập thành công! Xin chào, ${user.display_name || user.id}`);
