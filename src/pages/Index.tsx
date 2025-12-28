@@ -37,51 +37,73 @@ const Index = () => {
   const [transferResult, setTransferResult] = useState<TransferResult | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  // Load data from session storage on mount
+  // Load data from localStorage on mount and listen for storage events
   useEffect(() => {
-    const sourceData = sessionStorage.getItem('spotify_source_data');
-    const targetData = sessionStorage.getItem('spotify_target_data');
+    const loadAccountData = () => {
+      const sourceData = localStorage.getItem('spotify_source_data');
+      const targetData = localStorage.getItem('spotify_target_data');
 
-    if (sourceData) {
-      try {
-        const parsed = JSON.parse(sourceData);
-        setSourceAccount({
-          user: parsed.user,
-          tokens: parsed.tokens,
-          userData: parsed.userData,
-          isLoading: false,
-          error: null,
-        });
-        sessionStorage.removeItem('spotify_source_data');
-        toast({
-          title: "Đã kết nối!",
-          description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
-        });
-      } catch (e) {
-        console.error('Failed to parse source data:', e);
+      if (sourceData && !sourceAccount.user) {
+        try {
+          const parsed = JSON.parse(sourceData);
+          setSourceAccount({
+            user: parsed.user,
+            tokens: parsed.tokens,
+            userData: parsed.userData,
+            isLoading: false,
+            error: null,
+          });
+          localStorage.removeItem('spotify_source_data');
+          toast({
+            title: "Đã kết nối!",
+            description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+          });
+        } catch (e) {
+          console.error('Failed to parse source data:', e);
+        }
       }
-    }
 
-    if (targetData) {
-      try {
-        const parsed = JSON.parse(targetData);
-        setTargetAccount({
-          user: parsed.user,
-          tokens: parsed.tokens,
-          userData: parsed.userData,
-          isLoading: false,
-          error: null,
-        });
-        sessionStorage.removeItem('spotify_target_data');
-        toast({
-          title: "Đã kết nối!",
-          description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
-        });
-      } catch (e) {
-        console.error('Failed to parse target data:', e);
+      if (targetData && !targetAccount.user) {
+        try {
+          const parsed = JSON.parse(targetData);
+          setTargetAccount({
+            user: parsed.user,
+            tokens: parsed.tokens,
+            userData: parsed.userData,
+            isLoading: false,
+            error: null,
+          });
+          localStorage.removeItem('spotify_target_data');
+          toast({
+            title: "Đã kết nối!",
+            description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+          });
+        } catch (e) {
+          console.error('Failed to parse target data:', e);
+        }
       }
-    }
-  }, [setSourceAccount, setTargetAccount, toast]);
+    };
+
+    // Initial load
+    loadAccountData();
+
+    // Listen for storage events from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'spotify_source_data' || e.key === 'spotify_target_data') {
+        loadAccountData();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also poll for changes (for same-tab updates)
+    const interval = setInterval(loadAccountData, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [sourceAccount.user, targetAccount.user, setSourceAccount, setTargetAccount, toast]);
 
   const canTransfer = sourceAccount.user && targetAccount.user && sourceAccount.tokens && targetAccount.tokens;
   const bothConnected = sourceAccount.user && targetAccount.user;
