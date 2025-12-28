@@ -37,57 +37,80 @@ const Index = () => {
   const [transferResult, setTransferResult] = useState<TransferResult | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  // Load data from localStorage on mount and listen for storage events
+  // Load data from localStorage (persist across reloads) and sync across tabs
   useEffect(() => {
+    const lastIds = {
+      source: sourceAccount.user?.id ?? null,
+      target: targetAccount.user?.id ?? null,
+    };
+
     const loadAccountData = () => {
       const sourceData = localStorage.getItem('spotify_source_data');
       const targetData = localStorage.getItem('spotify_target_data');
 
-      if (sourceData && !sourceAccount.user) {
+      if (sourceData) {
         try {
           const parsed = JSON.parse(sourceData);
-          setSourceAccount({
-            user: parsed.user,
-            tokens: parsed.tokens,
-            userData: parsed.userData,
-            isLoading: false,
-            error: null,
-          });
-          localStorage.removeItem('spotify_source_data');
-          toast({
-            title: "Đã kết nối!",
-            description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
-          });
+          if (parsed?.user?.id && parsed.user.id !== lastIds.source) {
+            lastIds.source = parsed.user.id;
+            setSourceAccount({
+              user: parsed.user,
+              tokens: parsed.tokens,
+              userData: parsed.userData,
+              isLoading: false,
+              error: null,
+            });
+            toast({
+              title: "Đã kết nối!",
+              description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+            });
+          } else if (parsed?.user?.id && !sourceAccount.user) {
+            setSourceAccount({
+              user: parsed.user,
+              tokens: parsed.tokens,
+              userData: parsed.userData,
+              isLoading: false,
+              error: null,
+            });
+          }
         } catch (e) {
           console.error('Failed to parse source data:', e);
         }
       }
 
-      if (targetData && !targetAccount.user) {
+      if (targetData) {
         try {
           const parsed = JSON.parse(targetData);
-          setTargetAccount({
-            user: parsed.user,
-            tokens: parsed.tokens,
-            userData: parsed.userData,
-            isLoading: false,
-            error: null,
-          });
-          localStorage.removeItem('spotify_target_data');
-          toast({
-            title: "Đã kết nối!",
-            description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
-          });
+          if (parsed?.user?.id && parsed.user.id !== lastIds.target) {
+            lastIds.target = parsed.user.id;
+            setTargetAccount({
+              user: parsed.user,
+              tokens: parsed.tokens,
+              userData: parsed.userData,
+              isLoading: false,
+              error: null,
+            });
+            toast({
+              title: "Đã kết nối!",
+              description: `Chào mừng ${parsed.user.display_name || parsed.user.id}`,
+            });
+          } else if (parsed?.user?.id && !targetAccount.user) {
+            setTargetAccount({
+              user: parsed.user,
+              tokens: parsed.tokens,
+              userData: parsed.userData,
+              isLoading: false,
+              error: null,
+            });
+          }
         } catch (e) {
           console.error('Failed to parse target data:', e);
         }
       }
     };
 
-    // Initial load
     loadAccountData();
 
-    // Listen for storage events from other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'spotify_source_data' || e.key === 'spotify_target_data') {
         loadAccountData();
@@ -95,15 +118,13 @@ const Index = () => {
     };
 
     window.addEventListener('storage', handleStorageChange);
-
-    // Also poll for changes (for same-tab updates)
-    const interval = setInterval(loadAccountData, 1000);
+    window.addEventListener('focus', loadAccountData);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      window.removeEventListener('focus', loadAccountData);
     };
-  }, [sourceAccount.user, targetAccount.user, setSourceAccount, setTargetAccount, toast]);
+  }, [setSourceAccount, setTargetAccount, toast, sourceAccount.user, targetAccount.user]);
 
   const canTransfer = sourceAccount.user && targetAccount.user && sourceAccount.tokens && targetAccount.tokens;
   const bothConnected = sourceAccount.user && targetAccount.user;
