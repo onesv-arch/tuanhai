@@ -38,20 +38,8 @@ export function useSpotifyAuth() {
       setSourceAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('source');
 
-      // Account type is encoded in the OAuth `state` already (see backend function).
-      // Open OAuth in a new tab (Lovable preview can block same-tab redirects).
-      const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
-      if (opened) {
-        opened.focus();
-      } else {
-        // Fallback: try same-tab navigation
-        window.location.assign(authUrl);
-      }
-
-      // Prevent double-click from opening multiple tabs
-      window.setTimeout(() => {
-        setSourceAccount((prev) => ({ ...prev, isLoading: false }));
-      }, 1200);
+      // Same-tab OAuth flow (simpler UX)
+      window.location.assign(authUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
       setSourceAccount((prev) => ({ ...prev, isLoading: false, error: message }));
@@ -63,16 +51,8 @@ export function useSpotifyAuth() {
       setTargetAccount((prev) => ({ ...prev, isLoading: true, error: null }));
       const authUrl = await getSpotifyAuthUrl('target');
 
-      const opened = window.open(authUrl, '_blank', 'noopener,noreferrer');
-      if (opened) {
-        opened.focus();
-      } else {
-        window.location.assign(authUrl);
-      }
-
-      window.setTimeout(() => {
-        setTargetAccount((prev) => ({ ...prev, isLoading: false }));
-      }, 1200);
+      // Same-tab OAuth flow (simpler UX)
+      window.location.assign(authUrl);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to login';
       setTargetAccount((prev) => ({ ...prev, isLoading: false, error: message }));
